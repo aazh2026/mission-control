@@ -107,6 +107,104 @@ const initialItems: PipelineItem[] = [
     eternalMarket: "happiness",
     coreIdea: "AI 也要自我教育、自我利益、自给自足"
   },
+  // ===== 新增选题（基于用户画像组织）=====
+  {
+    _id: "10",
+    title: "我如何用 OpenClaw 构建创作者操作系统",
+    stage: "idea",
+    description: "实战案例：从0到1构建 Mission Control 的完整过程",
+    priority: "P0",
+    status: "pending",
+    eternalMarket: "wealth",
+    coreIdea: "AI 不是替代你，而是放大你",
+    source: "今日实践",
+    variants: [
+      { platform: "公众号", format: "长文教程", content: "", status: "pending" },
+      { platform: "小红书", format: "3图说清楚", content: "", status: "pending" },
+      { platform: "Twitter", format: "10条线程", content: "", status: "pending" }
+    ],
+    createdAt: Date.now()
+  },
+  {
+    _id: "11",
+    title: "Dan Koe 的多兴趣理论，我实践了30天",
+    stage: "idea",
+    description: "验证报告：多兴趣融合是否真的可行？",
+    priority: "P0",
+    status: "pending",
+    eternalMarket: "happiness",
+    coreIdea: "不要 niche down，要兴趣融合",
+    source: "Skill Evolution 系统",
+    createdAt: Date.now()
+  },
+  {
+    _id: "12",
+    title: "AI Agent 正在变成你的第二大脑",
+    stage: "research",
+    description: "趋势分析：从使用 AI 到与 AI 共生",
+    priority: "P1",
+    status: "pending",
+    eternalMarket: "wealth",
+    coreIdea: "AI Agent 是思维的外延",
+    source: "Karpathy RSS 源",
+    createdAt: Date.now()
+  },
+  {
+    _id: "13",
+    title: "一人企业的技术栈 2025",
+    stage: "idea",
+    description: "完整工具链：内容创作 → 分发 → 自动化",
+    priority: "P1",
+    status: "pending",
+    eternalMarket: "wealth",
+    coreIdea: "用最简单的工具构建一人公司",
+    createdAt: Date.now()
+  },
+  {
+    _id: "14",
+    title: "从国学经典到 AI 自动化：我的知识管理进化",
+    stage: "idea",
+    description: "个人故事：传统智慧 × 现代工具的融合",
+    priority: "P1",
+    status: "pending",
+    eternalMarket: "happiness",
+    coreIdea: "悟道修行与效率工具并不矛盾",
+    createdAt: Date.now()
+  },
+  {
+    _id: "15",
+    title: "为什么我不再追求 work-life balance",
+    stage: "idea",
+    description: "观点文章：追求融合而非平衡",
+    priority: "P2",
+    status: "pending",
+    eternalMarket: "happiness",
+    coreIdea: "work-life integration > work-life balance",
+    createdAt: Date.now()
+  },
+  {
+    _id: "16",
+    title: "AI 时代的通才生存指南",
+    stage: "idea",
+    description: "深度长文：第二次文艺复兴的通才优势",
+    priority: "P2",
+    status: "pending",
+    eternalMarket: "wealth",
+    coreIdea: "AI 时代，通才 > 专才",
+    source: "Dan Koe, Naval, Paul Graham",
+    createdAt: Date.now()
+  },
+  {
+    _id: "17",
+    title: "我追踪了100个创作者，发现的成功模式",
+    stage: "idea",
+    description: "数据分析：从 RSS 源中提取创作者规律",
+    priority: "P2",
+    status: "pending",
+    eternalMarket: "wealth",
+    coreIdea: "成功创作者的共同特征",
+    createdAt: Date.now()
+  },
   { 
     _id: "3", 
     title: "如何把多种兴趣融合成生意", 
