@@ -230,6 +230,43 @@ const initialItems: PipelineItem[] = [
     status: "pending",
     eternalMarket: "happiness"
   },
+  // ===== RSS 精选 - 2026-03-04 =====
+  {
+    _id: "20",
+    title: "Donald Knuth 评论 Claude Opus 4.6",
+    stage: "idea",
+    description: "图灵奖得主：AI 解决了我的开放问题，我需要重新评估对生成式 AI 的看法",
+    priority: "P0",
+    status: "pending",
+    eternalMarket: "happiness",
+    coreIdea: "AI 自动推理和创造性问题解决的重大进步",
+    source: "Simon Willison - 2026-03-03",
+    createdAt: Date.now()
+  },
+  {
+    _id: "21",
+    title: "Agentic Engineering Patterns 指南",
+    stage: "research",
+    description: "Simon Willison 系统性总结与 AI Agent 协作的模式：认知债务、交互式解释、囤积技能",
+    priority: "P0",
+    status: "pending",
+    eternalMarket: "wealth",
+    coreIdea: "系统性方法与 AI Agent 协作，避免认知债务",
+    source: "Simon Willison - 2026-03-02",
+    createdAt: Date.now()
+  },
+  {
+    _id: "22",
+    title: "Claude Code 远程控制功能发布",
+    stage: "idea",
+    description: "手机远程控制电脑端的 Claude Code，Anthropic 推出 Cowork 定时任务",
+    priority: "P0",
+    status: "pending",
+    eternalMarket: "wealth",
+    coreIdea: "AI Agent 正在变成真正的远程助手",
+    source: "Simon Willison - 2026-02-25",
+    createdAt: Date.now()
+  },
 ];
 
 export default function PipelinePage() {
