@@ -39,39 +39,39 @@ interface PipelineItem {
 }
 
 const stageConfig: Record<PipelineStage, { label: string; icon: string; color: string; description: string }> = {
-  idea: { 
-    label: "灵感池", 
-    icon: "💡", 
+  idea: {
+    label: "灵感池",
+    icon: "💡",
     color: "bg-yellow-100",
     description: "收集想法，建立素材库"
   },
-  research: { 
-    label: "研究", 
-    icon: "🔍", 
+  research: {
+    label: "研究",
+    icon: "🔍",
     color: "bg-indigo-100",
     description: "深度学习，建立想法密度"
   },
-  script: { 
-    label: "创作", 
-    icon: "✍️", 
+  script: {
+    label: "创作",
+    icon: "✍️",
     color: "bg-blue-100",
     description: "撰写核心内容"
   },
-  visual: { 
-    label: "视觉", 
-    icon: "🎨", 
+  visual: {
+    label: "视觉",
+    icon: "🎨",
     color: "bg-purple-100",
     description: "设计配图、封面"
   },
-  repurpose: { 
-    label: "变体", 
-    icon: "🔄", 
+  repurpose: {
+    label: "变体",
+    icon: "🔄",
     color: "bg-orange-100",
     description: "用1000种方式表达同一个想法"
   },
-  publish: { 
-    label: "发布", 
-    icon: "🚀", 
+  publish: {
+    label: "发布",
+    icon: "🚀",
     color: "bg-green-100",
     description: "发布并追踪影响"
   },
@@ -86,23 +86,23 @@ const eternalMarketConfig: Record<EternalMarket, { label: string; icon: string; 
 };
 
 const initialItems: PipelineItem[] = [
-  { 
-    _id: "1", 
-    title: "Mission Control 创作者操作系统", 
-    stage: "publish", 
+  {
+    _id: "1",
+    title: "Mission Control 创作者操作系统",
+    stage: "publish",
     description: "基于 Dan Koe + TermMax 的创作者工作流",
-    priority: "P0", 
+    priority: "P0",
     status: "done",
     eternalMarket: "wealth",
     coreIdea: "系统化个人工作流，把兴趣变成生意",
     impact: { views: 120, likes: 15, comments: 3 }
   },
-  { 
-    _id: "2", 
-    title: "AI 技能进化实践", 
-    stage: "script", 
+  {
+    _id: "2",
+    title: "AI 技能进化实践",
+    stage: "script",
     description: "记录我如何基于 Dan Koe 理念进化",
-    priority: "P1", 
+    priority: "P1",
     status: "in_progress",
     eternalMarket: "happiness",
     coreIdea: "AI 也要自我教育、自我利益、自给自足"
@@ -205,12 +205,12 @@ const initialItems: PipelineItem[] = [
     coreIdea: "成功创作者的共同特征",
     createdAt: Date.now()
   },
-  { 
-    _id: "3", 
-    title: "如何把多种兴趣融合成生意", 
-    stage: "repurpose", 
+  {
+    _id: "3",
+    title: "如何把多种兴趣融合成生意",
+    stage: "repurpose",
     description: "Dan Koe 文章的读书笔记",
-    priority: "P1", 
+    priority: "P1",
     status: "in_progress",
     source: "Dan Koe",
     eternalMarket: "wealth",
@@ -221,12 +221,12 @@ const initialItems: PipelineItem[] = [
       { platform: "Twitter", format: "线程", content: "核心金句串", status: "pending" }
     ]
   },
-  { 
-    _id: "4", 
-    title: "想法博物馆实践指南", 
-    stage: "idea", 
+  {
+    _id: "4",
+    title: "想法博物馆实践指南",
+    stage: "idea",
     description: "如何建立个人素材库",
-    priority: "P2", 
+    priority: "P2",
     status: "pending",
     eternalMarket: "happiness"
   },
@@ -246,14 +246,14 @@ const initialItems: PipelineItem[] = [
   {
     _id: "21",
     title: "Agentic Engineering Patterns 指南",
-    stage: "script", 
+    stage: "visual",
     description: "Simon Willison 系统性总结与 AI Agent 协作的模式：认知债务、交互式解释、囤积技能",
     priority: "P0",
     status: "in_progress",
     eternalMarket: "wealth",
     coreIdea: "系统性方法与 AI Agent 协作，避免认知债务",
     source: "Simon Willison - 2026-03-02",
-    script: "文章框架已创建：1.引言 2.什么是Agentic Engineering 3.核心模式解析(6个模式) 4.实战案例 5.常见陷阱 6.下一步行动 7.结语",
+    script: "文章已完成初稿（约 3000 字），包含：1.引言 2.什么是Agentic Engineering 3.6个核心模式详解 4.3个实战案例 5.常见陷阱 6.行动建议 7.结语。准备配图和发布。",
     createdAt: Date.now()
   },
   {
@@ -282,10 +282,10 @@ export default function PipelinePage() {
     priority: "P0" | "P1" | "P2";
     eternalMarket: EternalMarket;
     coreIdea: string;
-  }>({ 
-    title: "", 
-    description: "", 
-    source: "", 
+  }>({
+    title: "",
+    description: "",
+    source: "",
     priority: "P1",
     eternalMarket: null,
     coreIdea: ""
@@ -312,11 +312,11 @@ export default function PipelinePage() {
     const currentIndex = stages.indexOf(currentStage);
     if (currentIndex < stages.length - 1) {
       const nextStage = stages[currentIndex + 1];
-      setItems(items.map(i => 
-        i._id === itemId 
-          ? { 
-              ...i, 
-              stage: nextStage, 
+      setItems(items.map(i =>
+        i._id === itemId
+          ? {
+              ...i,
+              stage: nextStage,
               status: nextStage === "publish" ? "done" : "pending",
               publishedAt: nextStage === "publish" ? Date.now() : i.publishedAt
             }
@@ -458,7 +458,7 @@ export default function PipelinePage() {
               <option value="P2">P2 - 补充</option>
             </select>
           </div>
-          
+
           <textarea
             placeholder="描述"
             value={newIdea.description}
@@ -466,7 +466,7 @@ export default function PipelinePage() {
             className="w-full px-3 py-2 border rounded-lg"
             rows={2}
           />
-          
+
           {/* 核心观点 - Dan Koe "1000种方式表达同一个想法" */}
           <div>
             <label className="block text-sm text-slate-600 mb-1">💡 核心观点（用于重复表达）</label>
@@ -478,7 +478,7 @@ export default function PipelinePage() {
               className="w-full px-3 py-2 border rounded-lg"
             />
           </div>
-          
+
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-slate-600 mb-1">📚 来源</label>
@@ -505,7 +505,7 @@ export default function PipelinePage() {
               </select>
             </div>
           </div>
-          
+
           <div className="flex gap-2">
             <button type="submit" className="px-4 py-2 bg-purple-500 text-white rounded-lg">创建</button>
             <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 bg-slate-200 rounded-lg">取消</button>
@@ -537,24 +537,24 @@ export default function PipelinePage() {
                     </span>
                     <button onClick={() => handleDelete(item._id)} className="text-slate-400 hover:text-red-500">×</button>
                   </div>
-                  
+
                   <h3 className="font-medium text-slate-800 mb-1">{item.title}</h3>
-                  
+
                   {/* 永恒市场标签 */}
                   {item.eternalMarket && (
                     <span className={`inline-block text-xs px-1.5 py-0.5 rounded mb-1 ${eternalMarketConfig[item.eternalMarket].color}`}>
                       {eternalMarketConfig[item.eternalMarket].icon} {eternalMarketConfig[item.eternalMarket].label}
                     </span>
                   )}
-                  
+
                   {/* 核心观点 */}
                   {item.coreIdea && (
                     <p className="text-xs text-slate-500 mb-1 italic">"{item.coreIdea}"</p>
                   )}
-                  
+
                   {item.description && <p className="text-xs text-slate-500 mb-1">{item.description}</p>}
                   {item.source && <p className="text-xs text-slate-400">来源: {item.source}</p>}
-                  
+
                   {/* 内容变体 - Dan Koe "1000种方式" */}
                   {item.variants && item.variants.length > 0 && (
                     <div className="mt-2 pt-2 border-t border-slate-100">
@@ -570,7 +570,7 @@ export default function PipelinePage() {
                       </div>
                     </div>
                   )}
-                  
+
                   {/* 影响数据 */}
                   {item.impact && item.stage === "publish" && (
                     <div className="mt-2 pt-2 border-t border-slate-100 flex gap-2 text-xs text-slate-600">
@@ -579,7 +579,7 @@ export default function PipelinePage() {
                       {item.impact.comments && <span>💬 {item.impact.comments}</span>}
                     </div>
                   )}
-                  
+
                   {/* 脚本编辑 */}
                   {editingScript === item._id ? (
                     <div className="mt-2 space-y-1">
@@ -603,7 +603,7 @@ export default function PipelinePage() {
                   ) : (stage === "script" || stage === "repurpose") ? (
                     <button onClick={() => { setEditingScript(item._id); setScriptContent(""); }} className="mt-1 text-xs text-blue-500">+ 添加内容</button>
                   ) : null}
-                  
+
                   {/* 推进按钮 */}
                   {stage !== "publish" && (
                     <button
