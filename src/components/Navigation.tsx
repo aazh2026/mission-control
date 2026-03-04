@@ -7,6 +7,7 @@ const navItems = [
   { href: "/", label: "🏠 首页", color: "bg-gray-500" },
   { href: "/tasks", label: "📝 任务看板", color: "bg-blue-500" },
   { href: "/pipeline", label: "🔄 内容流水线", color: "bg-purple-500" },
+  { href: "/creator", label: "🎯 创作者", color: "bg-orange-500" },
   { href: "/calendar", label: "📅 日历", color: "bg-green-500" },
   { href: "/memory", label: "🧠 记忆库", color: "bg-yellow-500" },
   { href: "/team", label: "👥 团队", color: "bg-indigo-500" },
