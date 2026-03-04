@@ -246,13 +246,14 @@ const initialItems: PipelineItem[] = [
   {
     _id: "21",
     title: "Agentic Engineering Patterns 指南",
-    stage: "research",
+    stage: "script", 
     description: "Simon Willison 系统性总结与 AI Agent 协作的模式：认知债务、交互式解释、囤积技能",
     priority: "P0",
-    status: "pending",
+    status: "in_progress",
     eternalMarket: "wealth",
     coreIdea: "系统性方法与 AI Agent 协作，避免认知债务",
     source: "Simon Willison - 2026-03-02",
+    script: "文章框架已创建：1.引言 2.什么是Agentic Engineering 3.核心模式解析(6个模式) 4.实战案例 5.常见陷阱 6.下一步行动 7.结语",
     createdAt: Date.now()
   },
   {
