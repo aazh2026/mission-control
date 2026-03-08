@@ -176,13 +176,16 @@ export default function PipelinePage() {
   const [selectedContent, setSelectedContent] = useState<any | null>(null);
   const [movingId, setMovingId] = useState<number | null>(null);
   const [showSuggestions, setShowSuggestions] = useState<number | null>(null);
-  const [isMovingFromInbox, setIsMovingFromInbox] = useState(false);
+  
+  // 使用 ref 追踪已处理的 id，防止重复处理
+  const processedIdsRef = useRef<Set<string>>(new Set());
 
   // 处理从 Inbox 移动过来的内容
   useEffect(() => {
-    if (moveFromInboxId && !isMovingFromInbox) {
+    if (moveFromInboxId && !processedIdsRef.current.has(moveFromInboxId)) {
+      processedIdsRef.current.add(moveFromInboxId);
+      
       const moveContent = async () => {
-        setIsMovingFromInbox(true);
         const contentId = parseInt(moveFromInboxId);
         
         try {
@@ -198,24 +201,14 @@ export default function PipelinePage() {
           // 2. 刷新数据
           await refetch();
           
-          // 3. 找到新移动的内容并打开编辑弹窗
-          setTimeout(() => {
-            const researchContent = pipeline?.research?.find((c: any) => c.id === contentId);
-            if (researchContent) {
-              setSelectedContent(researchContent);
-            }
-          }, 100);
-          
         } catch (e) {
           console.error('Failed to move from inbox:', e);
-        } finally {
-          setIsMovingFromInbox(false);
         }
       };
       
       moveContent();
     }
-  }, [moveFromInboxId, isMovingFromInbox, refetch, pipeline]);
+  }, [moveFromInboxId, refetch]);
 
   // 拖拽处理
   const handleDrop = useCallback(async (contentId: number, fromStage: string, toStage: string) => {
