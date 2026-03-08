@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef, lazy, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { 
   GitBranch, 
   ChevronRight, 
@@ -168,10 +169,53 @@ function usePipelineData() {
 }
 
 export default function PipelinePage() {
+  const searchParams = useSearchParams();
+  const moveFromInboxId = searchParams.get('id');
+  
   const { data: pipeline, isLoading, moveCard, refetch, lastMoved, undoMove } = usePipelineData();
   const [selectedContent, setSelectedContent] = useState<any | null>(null);
   const [movingId, setMovingId] = useState<number | null>(null);
   const [showSuggestions, setShowSuggestions] = useState<number | null>(null);
+  const [isMovingFromInbox, setIsMovingFromInbox] = useState(false);
+
+  // 处理从 Inbox 移动过来的内容
+  useEffect(() => {
+    if (moveFromInboxId && !isMovingFromInbox) {
+      const moveContent = async () => {
+        setIsMovingFromInbox(true);
+        const contentId = parseInt(moveFromInboxId);
+        
+        try {
+          // 1. 调用 API 将内容从 inbox 移到 research
+          const res = await fetch(`/api/contents?id=${contentId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'research' }),
+          });
+          
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          
+          // 2. 刷新数据
+          await refetch();
+          
+          // 3. 找到新移动的内容并打开编辑弹窗
+          setTimeout(() => {
+            const researchContent = pipeline?.research?.find((c: any) => c.id === contentId);
+            if (researchContent) {
+              setSelectedContent(researchContent);
+            }
+          }, 100);
+          
+        } catch (e) {
+          console.error('Failed to move from inbox:', e);
+        } finally {
+          setIsMovingFromInbox(false);
+        }
+      };
+      
+      moveContent();
+    }
+  }, [moveFromInboxId, isMovingFromInbox, refetch, pipeline]);
 
   // 拖拽处理
   const handleDrop = useCallback(async (contentId: number, fromStage: string, toStage: string) => {
