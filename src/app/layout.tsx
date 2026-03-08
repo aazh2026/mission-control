@@ -1,22 +1,14 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
-import { ConvexClientProvider } from "@/components/ConvexClientProvider";
 import { Navigation } from "@/components/Navigation";
+import { ShortcutProvider } from "@/components/ShortcutProvider";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Mission Control - OpenClaw",
-  description: "AI 任务控制台 - 从对话助手升级为可运营系统",
+  title: "Mission Control v3.0",
+  description: "AI-Native Creator OS - SQLite Edition",
 };
 
 export default function RootLayout({
@@ -26,13 +18,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-50 min-h-screen`}
-      >
-        <ConvexClientProvider>
-          <Navigation />
-          <main className="max-w-7xl mx-auto p-6">{children}</main>
-        </ConvexClientProvider>
+      <body className={inter.className}>
+        <ShortcutProvider>
+          <div className="min-h-screen bg-slate-50">
+            <Navigation />
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              {children}
+            </main>
+          </div>
+        </ShortcutProvider>
       </body>
     </html>
   );

@@ -1,623 +1,614 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState, useCallback, useEffect, useRef, lazy, Suspense } from 'react';
+import { 
+  GitBranch, 
+  ChevronRight, 
+  Sparkles, 
+  X, 
+  Lightbulb, 
+  Zap, 
+  Clock, 
+  TrendingUp, 
+  AlertCircle,
+  MessageCircle,
+  Send
+} from 'lucide-react';
 
-// 基于 Dan Koe 理念的增强版内容流水线
-// 新增：素材库、内容变体、影响追踪、永恒市场分类
+// 懒加载 WeChat 发布面板
+const WeChatPublishPanel = lazy(() => import('@/components/WeChatPublishPanel'));
 
-type PipelineStage = "idea" | "research" | "script" | "visual" | "repurpose" | "publish";
-type PipelineStatus = "pending" | "in_progress" | "review" | "done";
-type EternalMarket = "health" | "wealth" | "relationship" | "happiness" | null;
-
-interface ContentVariant {
-  platform: string;
-  format: string;
-  content: string;
-  status: PipelineStatus;
-}
-
-interface PipelineItem {
-  _id: string;
-  title: string;
-  stage: PipelineStage;
-  description?: string;
-  priority: "P0" | "P1" | "P2";
-  status: PipelineStatus;
-  script?: string;
-  source?: string;
-  eternalMarket?: EternalMarket;
-  coreIdea?: string;           // 核心观点（用于重复表达）
-  variants?: ContentVariant[]; // 内容变体
-  impact?: {
-    views?: number;
-    likes?: number;
-    comments?: number;
-    conversions?: number;
-  };
-  createdAt: number;
-  publishedAt?: number;
-}
-
-const stageConfig: Record<PipelineStage, { label: string; icon: string; color: string; description: string }> = {
-  idea: {
-    label: "灵感池",
-    icon: "💡",
-    color: "bg-yellow-100",
-    description: "收集想法，建立素材库"
-  },
-  research: {
-    label: "研究",
-    icon: "🔍",
-    color: "bg-indigo-100",
-    description: "深度学习，建立想法密度"
-  },
-  script: {
-    label: "创作",
-    icon: "✍️",
-    color: "bg-blue-100",
-    description: "撰写核心内容"
-  },
-  visual: {
-    label: "视觉",
-    icon: "🎨",
-    color: "bg-purple-100",
-    description: "设计配图、封面"
-  },
-  repurpose: {
-    label: "变体",
-    icon: "🔄",
-    color: "bg-orange-100",
-    description: "用1000种方式表达同一个想法"
-  },
-  publish: {
-    label: "发布",
-    icon: "🚀",
-    color: "bg-green-100",
-    description: "发布并追踪影响"
-  },
-};
-
-const eternalMarketConfig: Record<EternalMarket, { label: string; icon: string; color: string }> = {
-  health: { label: "健康", icon: "💪", color: "bg-green-100 text-green-800" },
-  wealth: { label: "财富", icon: "💰", color: "bg-yellow-100 text-yellow-800" },
-  relationship: { label: "关系", icon: "❤️", color: "bg-pink-100 text-pink-800" },
-  happiness: { label: "幸福", icon: "😊", color: "bg-blue-100 text-blue-800" },
-  null: { label: "未分类", icon: "📌", color: "bg-slate-100 text-slate-600" },
-};
-
-const initialItems: PipelineItem[] = [
-  {
-    _id: "1",
-    title: "Mission Control 创作者操作系统",
-    stage: "publish",
-    description: "基于 Dan Koe + TermMax 的创作者工作流",
-    priority: "P0",
-    status: "done",
-    eternalMarket: "wealth",
-    coreIdea: "系统化个人工作流，把兴趣变成生意",
-    impact: { views: 120, likes: 15, comments: 3 }
-  },
-  {
-    _id: "2",
-    title: "AI 技能进化实践",
-    stage: "script",
-    description: "记录我如何基于 Dan Koe 理念进化",
-    priority: "P1",
-    status: "in_progress",
-    eternalMarket: "happiness",
-    coreIdea: "AI 也要自我教育、自我利益、自给自足"
-  },
-  // ===== 新增选题（基于用户画像组织）=====
-  {
-    _id: "10",
-    title: "我如何用 OpenClaw 构建创作者操作系统",
-    stage: "idea",
-    description: "实战案例：从0到1构建 Mission Control 的完整过程",
-    priority: "P0",
-    status: "pending",
-    eternalMarket: "wealth",
-    coreIdea: "AI 不是替代你，而是放大你",
-    source: "今日实践",
-    variants: [
-      { platform: "公众号", format: "长文教程", content: "", status: "pending" },
-      { platform: "小红书", format: "3图说清楚", content: "", status: "pending" },
-      { platform: "Twitter", format: "10条线程", content: "", status: "pending" }
-    ],
-    createdAt: Date.now()
-  },
-  {
-    _id: "11",
-    title: "Dan Koe 的多兴趣理论，我实践了30天",
-    stage: "idea",
-    description: "验证报告：多兴趣融合是否真的可行？",
-    priority: "P0",
-    status: "pending",
-    eternalMarket: "happiness",
-    coreIdea: "不要 niche down，要兴趣融合",
-    source: "Skill Evolution 系统",
-    createdAt: Date.now()
-  },
-  {
-    _id: "12",
-    title: "AI Agent 正在变成你的第二大脑",
-    stage: "research",
-    description: "趋势分析：从使用 AI 到与 AI 共生",
-    priority: "P1",
-    status: "pending",
-    eternalMarket: "wealth",
-    coreIdea: "AI Agent 是思维的外延",
-    source: "Karpathy RSS 源",
-    createdAt: Date.now()
-  },
-  {
-    _id: "13",
-    title: "一人企业的技术栈 2025",
-    stage: "idea",
-    description: "完整工具链：内容创作 → 分发 → 自动化",
-    priority: "P1",
-    status: "pending",
-    eternalMarket: "wealth",
-    coreIdea: "用最简单的工具构建一人公司",
-    createdAt: Date.now()
-  },
-  {
-    _id: "14",
-    title: "从国学经典到 AI 自动化：我的知识管理进化",
-    stage: "idea",
-    description: "个人故事：传统智慧 × 现代工具的融合",
-    priority: "P1",
-    status: "pending",
-    eternalMarket: "happiness",
-    coreIdea: "悟道修行与效率工具并不矛盾",
-    createdAt: Date.now()
-  },
-  {
-    _id: "15",
-    title: "为什么我不再追求 work-life balance",
-    stage: "idea",
-    description: "观点文章：追求融合而非平衡",
-    priority: "P2",
-    status: "pending",
-    eternalMarket: "happiness",
-    coreIdea: "work-life integration > work-life balance",
-    createdAt: Date.now()
-  },
-  {
-    _id: "16",
-    title: "AI 时代的通才生存指南",
-    stage: "idea",
-    description: "深度长文：第二次文艺复兴的通才优势",
-    priority: "P2",
-    status: "pending",
-    eternalMarket: "wealth",
-    coreIdea: "AI 时代，通才 > 专才",
-    source: "Dan Koe, Naval, Paul Graham",
-    createdAt: Date.now()
-  },
-  {
-    _id: "17",
-    title: "我追踪了100个创作者，发现的成功模式",
-    stage: "idea",
-    description: "数据分析：从 RSS 源中提取创作者规律",
-    priority: "P2",
-    status: "pending",
-    eternalMarket: "wealth",
-    coreIdea: "成功创作者的共同特征",
-    createdAt: Date.now()
-  },
-  {
-    _id: "3",
-    title: "如何把多种兴趣融合成生意",
-    stage: "repurpose",
-    description: "Dan Koe 文章的读书笔记",
-    priority: "P1",
-    status: "in_progress",
-    source: "Dan Koe",
-    eternalMarket: "wealth",
-    coreIdea: "做自己，把自己成为客户画像",
-    variants: [
-      { platform: "公众号", format: "长文", content: "原文深度解析", status: "done" },
-      { platform: "小红书", format: "图文", content: "5点核心提炼", status: "in_progress" },
-      { platform: "Twitter", format: "线程", content: "核心金句串", status: "pending" }
-    ]
-  },
-  {
-    _id: "4",
-    title: "想法博物馆实践指南",
-    stage: "idea",
-    description: "如何建立个人素材库",
-    priority: "P2",
-    status: "pending",
-    eternalMarket: "happiness"
-  },
-  // ===== RSS 精选 - 2026-03-04 =====
-  {
-    _id: "20",
-    title: "Donald Knuth 评论 Claude Opus 4.6",
-    stage: "idea",
-    description: "图灵奖得主：AI 解决了我的开放问题，我需要重新评估对生成式 AI 的看法",
-    priority: "P0",
-    status: "pending",
-    eternalMarket: "happiness",
-    coreIdea: "AI 自动推理和创造性问题解决的重大进步",
-    source: "Simon Willison - 2026-03-03",
-    createdAt: Date.now()
-  },
-  {
-    _id: "21",
-    title: "Agentic Engineering Patterns 指南",
-    stage: "visual",
-    description: "Simon Willison 系统性总结与 AI Agent 协作的模式：认知债务、交互式解释、囤积技能",
-    priority: "P0",
-    status: "in_progress",
-    eternalMarket: "wealth",
-    coreIdea: "系统性方法与 AI Agent 协作，避免认知债务",
-    source: "Simon Willison - 2026-03-02",
-    script: "文章已完成初稿（约 3000 字），包含：1.引言 2.什么是Agentic Engineering 3.6个核心模式详解 4.3个实战案例 5.常见陷阱 6.行动建议 7.结语。准备配图和发布。",
-    createdAt: Date.now()
-  },
-  {
-    _id: "22",
-    title: "Claude Code 远程控制功能发布",
-    stage: "idea",
-    description: "手机远程控制电脑端的 Claude Code，Anthropic 推出 Cowork 定时任务",
-    priority: "P0",
-    status: "pending",
-    eternalMarket: "wealth",
-    coreIdea: "AI Agent 正在变成真正的远程助手",
-    source: "Simon Willison - 2026-02-25",
-    createdAt: Date.now()
-  },
+const STAGES = [
+  { key: 'research', label: 'Research', color: 'bg-purple-500', icon: '🔍' },
+  { key: 'writing', label: 'Writing', color: 'bg-blue-500', icon: '✍️' },
+  { key: 'editing', label: 'Editing', color: 'bg-amber-500', icon: '🎨' },
+  { key: 'scheduled', label: 'Scheduled', color: 'bg-green-500', icon: '📅' },
+  { key: 'published', label: 'Published', color: 'bg-slate-500', icon: '🚀' },
 ];
 
-export default function PipelinePage() {
-  const [items, setItems] = useState<PipelineItem[]>(initialItems);
-  const [showForm, setShowForm] = useState(false);
-  const [editingScript, setEditingScript] = useState<string | null>(null);
-  const [showVariants, setShowVariants] = useState<string | null>(null);
-  const [newIdea, setNewIdea] = useState<{
-    title: string;
-    description: string;
-    source: string;
-    priority: "P0" | "P1" | "P2";
-    eternalMarket: EternalMarket;
-    coreIdea: string;
-  }>({
-    title: "",
-    description: "",
-    source: "",
-    priority: "P1",
-    eternalMarket: null,
-    coreIdea: ""
-  });
-  const [scriptContent, setScriptContent] = useState("");
-  const [filter, setFilter] = useState<EternalMarket | "all">("all");
+// 智能建议生成器
+function generateSuggestions(content: any, currentStage: string): string[] {
+  const suggestions: string[] = [];
+  
+  if (currentStage === 'research') {
+    if (!content.ai_outline) {
+      suggestions.push('💡 使用AI生成文章大纲，梳理核心观点');
+    }
+    if (content.source) {
+      suggestions.push('📚 补充3-5个相关来源，增强论证深度');
+    }
+    suggestions.push('🎯 明确核心受众和传播平台');
+  }
+  
+  if (currentStage === 'writing') {
+    if (!content.my_draft && !content.ai_draft) {
+      suggestions.push('✍️ 基于AI大纲开始写初稿');
+    }
+    if (content.title?.length > 60) {
+      suggestions.push('⚠️ 标题过长，建议控制在40字以内');
+    }
+    suggestions.push('📝 每段一个观点，保持信息密度');
+  }
+  
+  if (currentStage === 'editing') {
+    suggestions.push('🔍 检查标题吸引力，添加hook');
+    suggestions.push('📊 添加数据/案例支撑观点');
+    suggestions.push('🎨 为不同平台准备版本');
+  }
+  
+  if (currentStage === 'scheduled') {
+    if (!content.scheduled_at) {
+      suggestions.push('⏰ 选择最佳发布时间（周三21:00效果最佳）');
+    }
+    suggestions.push('📱 提前准备社交媒体预热文案');
+    suggestions.push('💬 配置微信公众号发布');
+  }
+  
+  // 通用建议
+  if (content.ai_relevance >= 8) {
+    suggestions.unshift('🔥 高相关度文章，建议优先处理');
+  }
+  
+  return suggestions.slice(0, 3);
+}
 
-  const handleCreate = (e: React.FormEvent) => {
+// 拖拽hook
+function useDragAndDrop(onDrop: (contentId: number, fromStage: string, toStage: string) => void) {
+  const [draggingId, setDraggingId] = useState<number | null>(null);
+  const [dragOverStage, setDragOverStage] = useState<string | null>(null);
+  const dragRef = useRef<{ id: number; fromStage: string } | null>(null);
+
+  const handleDragStart = useCallback((contentId: number, fromStage: string) => {
+    setDraggingId(contentId);
+    dragRef.current = { id: contentId, fromStage };
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent, stageKey: string) => {
     e.preventDefault();
-    const item: PipelineItem = {
-      _id: Math.random().toString(36).substr(2, 9),
-      ...newIdea,
-      stage: "idea",
-      status: "pending",
-      createdAt: Date.now(),
-    };
-    setItems([item, ...items]);
-    setShowForm(false);
-    setNewIdea({ title: "", description: "", source: "", priority: "P1", eternalMarket: null, coreIdea: "" });
-  };
+    setDragOverStage(stageKey);
+  }, []);
 
-  const handleAdvance = (itemId: string, currentStage: PipelineStage) => {
-    const stages: PipelineStage[] = ["idea", "research", "script", "visual", "repurpose", "publish"];
-    const currentIndex = stages.indexOf(currentStage);
-    if (currentIndex < stages.length - 1) {
-      const nextStage = stages[currentIndex + 1];
-      setItems(items.map(i =>
-        i._id === itemId
-          ? {
-              ...i,
-              stage: nextStage,
-              status: nextStage === "publish" ? "done" : "pending",
-              publishedAt: nextStage === "publish" ? Date.now() : i.publishedAt
-            }
-          : i
-      ));
+  const handleDrop = useCallback((e: React.DragEvent, toStage: string) => {
+    e.preventDefault();
+    setDragOverStage(null);
+    setDraggingId(null);
+    
+    if (dragRef.current && dragRef.current.fromStage !== toStage) {
+      onDrop(dragRef.current.id, dragRef.current.fromStage, toStage);
     }
-  };
+    dragRef.current = null;
+  }, [onDrop]);
 
-  const handleSaveScript = (itemId: string) => {
-    setItems(items.map(i => i._id === itemId ? { ...i, script: scriptContent } : i));
-    setEditingScript(null);
-    setScriptContent("");
-  };
+  const handleDragEnd = useCallback(() => {
+    setDraggingId(null);
+    setDragOverStage(null);
+    dragRef.current = null;
+  }, []);
 
-  const handleDelete = (itemId: string) => {
-    if (confirm("确定删除？")) {
-      setItems(items.filter(i => i._id !== itemId));
+  return {
+    draggingId,
+    dragOverStage,
+    handleDragStart,
+    handleDragOver,
+    handleDrop,
+    handleDragEnd,
+  };
+}
+
+// 数据获取hook
+function usePipelineData() {
+  const [data, setData] = useState<Record<string, any[]> | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [lastMoved, setLastMoved] = useState<{ id: number; from: string; to: string } | null>(null);
+
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/contents?type=pipeline');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const result = await res.json();
+      setData(result);
+    } catch (e) {
+      setError(e instanceof Error ? e : new Error(String(e)));
+    } finally {
+      setIsLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // 乐观更新：移动卡片
+  const moveCard = useCallback((contentId: number, fromStage: string, toStage: string) => {
+    setData((prev) => {
+      if (!prev) return prev;
+      const content = prev[fromStage]?.find((c) => c.id === contentId);
+      if (!content) return prev;
+
+      const newData = { ...prev };
+      newData[fromStage] = prev[fromStage].filter((c) => c.id !== contentId);
+      newData[toStage] = [{ ...content, status: toStage }, ...(prev[toStage] || [])];
+      return newData;
+    });
+    setLastMoved({ id: contentId, from: fromStage, to: toStage });
+  }, []);
+
+  // 撤销移动
+  const undoMove = useCallback(() => {
+    if (!lastMoved) return;
+    moveCard(lastMoved.id, lastMoved.to, lastMoved.from);
+    setLastMoved(null);
+  }, [lastMoved, moveCard]);
+
+  const refetch = fetchData;
+
+  return { data, isLoading, error, moveCard, refetch, lastMoved, undoMove };
+}
+
+export default function PipelinePage() {
+  const { data: pipeline, isLoading, moveCard, refetch, lastMoved, undoMove } = usePipelineData();
+  const [selectedContent, setSelectedContent] = useState<any | null>(null);
+  const [movingId, setMovingId] = useState<number | null>(null);
+  const [showSuggestions, setShowSuggestions] = useState<number | null>(null);
+
+  // 拖拽处理
+  const handleDrop = useCallback(async (contentId: number, fromStage: string, toStage: string) => {
+    if (fromStage === toStage) return;
+    
+    // 1. 立即更新 UI（乐观更新）
+    moveCard(contentId, fromStage, toStage);
+    setMovingId(contentId);
+
+    // 2. 后台 API 调用
+    try {
+      const res = await fetch(`/api/contents?id=${contentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: toStage }),
+      });
+      
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch (e) {
+      console.error('Move failed:', e);
+      refetch(); // 失败时回滚
+    } finally {
+      setMovingId(null);
+    }
+  }, [moveCard, refetch]);
+
+  const {
+    draggingId,
+    dragOverStage,
+    handleDragStart,
+    handleDragOver,
+    handleDrop: onDrop,
+    handleDragEnd,
+  } = useDragAndDrop(handleDrop);
+
+  // 传统按钮推进
+  const handleMove = async (contentId: number, currentStage: string) => {
+    const currentIndex = STAGES.findIndex((s) => s.key === currentStage);
+    const nextStage = STAGES[currentIndex + 1]?.key;
+    if (!nextStage) return;
+    await handleDrop(contentId, currentStage, nextStage);
   };
 
-  const addVariant = (itemId: string, platform: string, format: string) => {
-    setItems(items.map(i => {
-      if (i._id === itemId) {
-        const variants = i.variants || [];
-        return {
-          ...i,
-          variants: [...variants, { platform, format, content: "", status: "pending" }]
-        };
+  // 批量推进
+  const [selectedForBatch, setSelectedForBatch] = useState<Set<number>>(new Set());
+  const [isBatchMode, setIsBatchMode] = useState(false);
+
+  const toggleSelection = (id: number) => {
+    setSelectedForBatch((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) newSet.delete(id);
+      else newSet.add(id);
+      return newSet;
+    });
+  };
+
+  const handleBatchMove = async (stageKey: string) => {
+    for (const id of selectedForBatch) {
+      const currentStage = Object.keys(pipeline || {}).find((key) =>
+        pipeline?.[key]?.some((c: any) => c.id === id)
+      );
+      if (currentStage && currentStage !== stageKey) {
+        await handleDrop(id, currentStage, stageKey);
       }
-      return i;
-    }));
-  };
-
-  const filteredItems = filter === "all" ? items : items.filter(i => i.eternalMarket === filter);
-
-  const itemsByStage: Record<PipelineStage, PipelineItem[]> = {
-    idea: filteredItems.filter((i) => i.stage === "idea"),
-    research: filteredItems.filter((i) => i.stage === "research"),
-    script: filteredItems.filter((i) => i.stage === "script"),
-    visual: filteredItems.filter((i) => i.stage === "visual"),
-    repurpose: filteredItems.filter((i) => i.stage === "repurpose"),
-    publish: filteredItems.filter((i) => i.stage === "publish"),
-  };
-
-  const stats = {
-    total: items.length,
-    published: items.filter(i => i.stage === "publish").length,
-    byMarket: {
-      health: items.filter(i => i.eternalMarket === "health").length,
-      wealth: items.filter(i => i.eternalMarket === "wealth").length,
-      relationship: items.filter(i => i.eternalMarket === "relationship").length,
-      happiness: items.filter(i => i.eternalMarket === "happiness").length,
     }
+    setSelectedForBatch(new Set());
+    setIsBatchMode(false);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* 顶部统计 - Dan Koe 永恒市场 */}
-      <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white p-6 rounded-xl">
-        <h2 className="text-lg font-bold mb-4">🎯 创作者仪表盘 (Dan Koe 模式)</h2>
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-          <div className="bg-white/10 p-3 rounded-lg text-center">
-            <div className="text-2xl font-bold">{stats.total}</div>
-            <div className="text-xs text-slate-300">总项目</div>
-          </div>
-          <div className="bg-white/10 p-3 rounded-lg text-center">
-            <div className="text-2xl font-bold">{stats.published}</div>
-            <div className="text-xs text-slate-300">已发布</div>
-          </div>
-          <div className="bg-green-500/20 p-3 rounded-lg text-center">
-            <div className="text-2xl font-bold">{stats.byMarket.health}</div>
-            <div className="text-xs">💪 健康</div>
-          </div>
-          <div className="bg-yellow-500/20 p-3 rounded-lg text-center">
-            <div className="text-2xl font-bold">{stats.byMarket.wealth}</div>
-            <div className="text-xs">💰 财富</div>
-          </div>
-          <div className="bg-pink-500/20 p-3 rounded-lg text-center">
-            <div className="text-2xl font-bold">{stats.byMarket.relationship}</div>
-            <div className="text-xs">❤️ 关系</div>
-          </div>
-          <div className="bg-blue-500/20 p-3 rounded-lg text-center">
-            <div className="text-2xl font-bold">{stats.byMarket.happiness}</div>
-            <div className="text-xs">😊 幸福</div>
-          </div>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+            <GitBranch className="w-6 h-6 text-blue-500" />
+            Pipeline
+          </h1>
+          <p className="text-slate-500 mt-1">拖拽卡片移动，点击编辑，AI智能建议</p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {lastMoved && (
+            <button
+              onClick={undoMove}
+              className="flex items-center gap-2 px-3 py-2 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200"
+            >
+              <X className="w-4 h-4" />
+              撤销移动
+            </button>
+          )}
+          <button
+            onClick={() => {
+              setIsBatchMode(!isBatchMode);
+              if (isBatchMode) setSelectedForBatch(new Set());
+            }}
+            className={`px-3 py-2 rounded-lg text-sm transition-colors ${
+              isBatchMode ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-700'
+            }`}
+          >
+            {isBatchMode ? '退出批量' : '批量操作'}
+          </button>
         </div>
       </div>
 
-      {/* 筛选器 */}
-      <div className="flex gap-2 flex-wrap">
-        <button
-          onClick={() => setFilter("all")}
-          className={`px-3 py-1 rounded-full text-sm ${filter === "all" ? "bg-slate-800 text-white" : "bg-slate-200"}`}
-        >
-          全部
-        </button>
-        {(["health", "wealth", "relationship", "happiness"] as EternalMarket[]).map((market) => (
-          <button
-            key={market}
-            onClick={() => setFilter(market)}
-            className={`px-3 py-1 rounded-full text-sm ${
-              filter === market ? eternalMarketConfig[market].color : "bg-slate-200"
-            }`}
-          >
-            {eternalMarketConfig[market].icon} {eternalMarketConfig[market].label}
-          </button>
-        ))}
-      </div>
-
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-slate-800">🔄 内容流水线</h1>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600"
-        >
-          + 添加灵感
-        </button>
-      </div>
-
-      {/* 新增表单 - 包含 Dan Koe 理念 */}
-      {showForm && (
-        <form onSubmit={handleCreate} className="bg-white p-6 rounded-xl shadow-md space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
-            <input
-              type="text"
-              placeholder="标题"
-              value={newIdea.title}
-              onChange={(e) => setNewIdea({ ...newIdea, title: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg"
-              required
-            />
-            <select
-              value={newIdea.priority}
-              onChange={(e) => setNewIdea({ ...newIdea, priority: e.target.value as "P0" | "P1" | "P2" })}
-              className="px-3 py-2 border rounded-lg"
-            >
-              <option value="P0">P0 - 核心</option>
-              <option value="P1">P1 - 重要</option>
-              <option value="P2">P2 - 补充</option>
-            </select>
-          </div>
-
-          <textarea
-            placeholder="描述"
-            value={newIdea.description}
-            onChange={(e) => setNewIdea({ ...newIdea, description: e.target.value })}
-            className="w-full px-3 py-2 border rounded-lg"
-            rows={2}
-          />
-
-          {/* 核心观点 - Dan Koe "1000种方式表达同一个想法" */}
-          <div>
-            <label className="block text-sm text-slate-600 mb-1">💡 核心观点（用于重复表达）</label>
-            <input
-              type="text"
-              placeholder="一句话概括这个内容的核心理念"
-              value={newIdea.coreIdea}
-              onChange={(e) => setNewIdea({ ...newIdea, coreIdea: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg"
-            />
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm text-slate-600 mb-1">📚 来源</label>
-              <input
-                type="text"
-                placeholder="如：Dan Koe, RSS, 书籍..."
-                value={newIdea.source}
-                onChange={(e) => setNewIdea({ ...newIdea, source: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-slate-600 mb-1">🎯 永恒市场</label>
-              <select
-                value={newIdea.eternalMarket || ""}
-                onChange={(e) => setNewIdea({ ...newIdea, eternalMarket: e.target.value as EternalMarket || null })}
-                className="w-full px-3 py-2 border rounded-lg"
-              >
-                <option value="">未分类</option>
-                <option value="health">💪 健康</option>
-                <option value="wealth">💰 财富</option>
-                <option value="relationship">❤️ 关系</option>
-                <option value="happiness">😊 幸福</option>
-              </select>
-            </div>
-          </div>
-
+      {/* Batch Operations */}
+      {isBatchMode && selectedForBatch.size > 0 && (
+        <div className="bg-blue-50 rounded-xl p-4 flex items-center justify-between">
+          <span className="text-sm text-slate-700">已选择 {selectedForBatch.size} 篇</span>
           <div className="flex gap-2">
-            <button type="submit" className="px-4 py-2 bg-purple-500 text-white rounded-lg">创建</button>
-            <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 bg-slate-200 rounded-lg">取消</button>
+            {STAGES.map((stage) => (
+              <button
+                key={stage.key}
+                onClick={() => handleBatchMove(stage.key)}
+                className={`px-3 py-1.5 text-sm rounded-lg ${stage.color} text-white`}
+              >
+                移到 {stage.label}
+              </button>
+            ))}
           </div>
-        </form>
+        </div>
       )}
 
-      {/* 六阶段流水线 */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
-        {(Object.keys(stageConfig) as PipelineStage[]).map((stage) => (
-          <div key={stage} className={`${stageConfig[stage].color} rounded-xl p-3`}>
-            <div className="flex items-center gap-2 mb-2 font-medium text-sm">
-              <span className="text-lg">{stageConfig[stage].icon}</span>
-              <div>
-                <div>{stageConfig[stage].label}</div>
-                <div className="text-xs text-slate-500">{itemsByStage[stage]?.length ?? 0} 项</div>
-              </div>
+      {/* Pipeline Board */}
+      <div className="flex gap-4 overflow-x-auto pb-4">
+        {STAGES.map((stage) => (
+          <div
+            key={stage.key}
+            className={`min-w-[300px] flex-shrink-0 transition-all ${
+              dragOverStage === stage.key ? 'scale-105' : ''
+            }`}
+            onDragOver={(e) => handleDragOver(e, stage.key)}
+            onDrop={(e) => onDrop(e, stage.key)}
+          >
+            <div className={`${stage.color} text-white px-4 py-2 rounded-t-lg font-medium flex items-center justify-between`}>
+              <span>{stage.icon} {stage.label}</span>
+              <span className="text-white/80">{pipeline?.[stage.key]?.length || 0}</span>
             </div>
-            <div className="text-xs text-slate-600 mb-2">{stageConfig[stage].description}</div>
-            <div className="space-y-2 max-h-[500px] overflow-y-auto">
-              {itemsByStage[stage]?.map((item) => (
-                <div key={item._id} className="bg-white p-3 rounded-lg shadow-sm text-sm">
-                  <div className="flex justify-between items-start mb-1">
-                    <span className={`text-xs px-1.5 py-0.5 rounded ${
-                      item.priority === "P0" ? "bg-red-500 text-white" :
-                      item.priority === "P1" ? "bg-orange-500 text-white" : "bg-blue-500 text-white"
-                    }`}>
-                      {item.priority}
-                    </span>
-                    <button onClick={() => handleDelete(item._id)} className="text-slate-400 hover:text-red-500">×</button>
+            
+            <div className={`bg-slate-100 rounded-b-lg p-3 space-y-3 min-h-[500px] transition-colors ${
+              dragOverStage === stage.key ? 'bg-blue-50 ring-2 ring-blue-300' : ''
+            }`}>
+              {pipeline?.[stage.key]?.map((content: any) => (
+                <div
+                  key={content.id}
+                  draggable={!isBatchMode}
+                  onDragStart={() => handleDragStart(content.id, stage.key)}
+                  onDragEnd={handleDragEnd}
+                  onClick={() => {
+                    if (isBatchMode) toggleSelection(content.id);
+                    else setSelectedContent(content);
+                  }}
+                  className={`bg-white rounded-lg p-3 shadow-sm hover:shadow-md cursor-pointer transition-all ${
+                    draggingId === content.id ? 'opacity-50' : ''
+                  } ${
+                    isBatchMode && selectedForBatch.has(content.id) ? 'ring-2 ring-blue-500' : ''
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <h4 className="font-medium text-slate-900 text-sm line-clamp-2">{content.title}</h4>
+                    {content.ai_relevance >= 8 && (
+                      <span className="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded flex-shrink-0">
+                        🔥{content.ai_relevance}
+                      </span>
+                    )}
                   </div>
-
-                  <h3 className="font-medium text-slate-800 mb-1">{item.title}</h3>
-
-                  {/* 永恒市场标签 */}
-                  {item.eternalMarket && (
-                    <span className={`inline-block text-xs px-1.5 py-0.5 rounded mb-1 ${eternalMarketConfig[item.eternalMarket].color}`}>
-                      {eternalMarketConfig[item.eternalMarket].icon} {eternalMarketConfig[item.eternalMarket].label}
-                    </span>
+                  
+                  {content.ai_tags && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {JSON.parse(content.ai_tags || '[]').slice(0, 2).map((tag: string) => (
+                        <span key={tag} className="px-1.5 py-0.5 bg-slate-100 text-slate-500 text-xs rounded">{tag}</span>
+                      ))}
+                    </div>
                   )}
 
-                  {/* 核心观点 */}
-                  {item.coreIdea && (
-                    <p className="text-xs text-slate-500 mb-1 italic">"{item.coreIdea}"</p>
-                  )}
-
-                  {item.description && <p className="text-xs text-slate-500 mb-1">{item.description}</p>}
-                  {item.source && <p className="text-xs text-slate-400">来源: {item.source}</p>}
-
-                  {/* 内容变体 - Dan Koe "1000种方式" */}
-                  {item.variants && item.variants.length > 0 && (
-                    <div className="mt-2 pt-2 border-t border-slate-100">
-                      <div className="text-xs text-slate-600 mb-1">🔄 内容变体:</div>
-                      <div className="flex flex-wrap gap-1">
-                        {item.variants.map((v, idx) => (
-                          <span key={idx} className={`text-xs px-1.5 py-0.5 rounded ${
-                            v.status === "done" ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-600"
-                          }`}>
-                            {v.platform}
-                          </span>
+                  {/* AI Suggestions Preview */}
+                  <div className="mt-2 pt-2 border-t border-slate-100">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowSuggestions(showSuggestions === content.id ? null : content.id);
+                      }}
+                      className="flex items-center gap-1 text-xs text-amber-600 hover:text-amber-700"
+                    >
+                      <Lightbulb className="w-3 h-3" />
+                      AI建议
+                    </button>
+                    
+                    {showSuggestions === content.id && (
+                      <div className="mt-2 space-y-1 text-xs text-slate-600">
+                        {generateSuggestions(content, stage.key).map((suggestion, i) => (
+                          <div key={i} className="flex items-start gap-1">
+                            <span>•</span>
+                            <span>{suggestion}</span>
+                          </div>
                         ))}
                       </div>
-                    </div>
-                  )}
-
-                  {/* 影响数据 */}
-                  {item.impact && item.stage === "publish" && (
-                    <div className="mt-2 pt-2 border-t border-slate-100 flex gap-2 text-xs text-slate-600">
-                      {item.impact.views && <span>👁 {item.impact.views}</span>}
-                      {item.impact.likes && <span>❤️ {item.impact.likes}</span>}
-                      {item.impact.comments && <span>💬 {item.impact.comments}</span>}
-                    </div>
-                  )}
-
-                  {/* 脚本编辑 */}
-                  {editingScript === item._id ? (
-                    <div className="mt-2 space-y-1">
-                      <textarea
-                        value={scriptContent}
-                        onChange={(e) => setScriptContent(e.target.value)}
-                        className="w-full px-2 py-1 border rounded text-xs"
-                        rows={3}
-                        placeholder="输入内容..."
-                      />
-                      <div className="flex gap-1">
-                        <button onClick={() => handleSaveScript(item._id)} className="px-2 py-0.5 bg-blue-500 text-white text-xs rounded">保存</button>
-                        <button onClick={() => setEditingScript(null)} className="px-2 py-0.5 bg-slate-200 text-xs rounded">取消</button>
-                      </div>
-                    </div>
-                  ) : item.script ? (
-                    <div className="mt-2 bg-slate-50 p-1.5 rounded text-xs">
-                      <p className="text-slate-600 line-clamp-2">{item.script}</p>
-                      <button onClick={() => { setEditingScript(item._id); setScriptContent(item.script || ""); }} className="text-blue-500 mt-0.5">编辑</button>
-                    </div>
-                  ) : (stage === "script" || stage === "repurpose") ? (
-                    <button onClick={() => { setEditingScript(item._id); setScriptContent(""); }} className="mt-1 text-xs text-blue-500">+ 添加内容</button>
-                  ) : null}
-
-                  {/* 推进按钮 */}
-                  {stage !== "publish" && (
-                    <button
-                      onClick={() => handleAdvance(item._id, stage)}
-                      className="mt-2 w-full text-xs px-2 py-1 bg-slate-800 text-white rounded hover:bg-slate-700"
-                    >
-                      推进 → {stageConfig[stage === "idea" ? "research" : stage === "research" ? "script" : stage === "script" ? "visual" : stage === "visual" ? "repurpose" : "publish"].label}
-                    </button>
-                  )}
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center gap-2 mt-3">
+                    {stage.key !== 'published' && !isBatchMode && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMove(content.id, stage.key);
+                        }}
+                        disabled={movingId === content.id}
+                        className="flex items-center gap-1 px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 disabled:opacity-50 transition-all active:scale-95"
+                      >
+                        {movingId === content.id ? '移动中...' : <>推进<ChevronRight className="w-3 h-3" /></>}
+                      </button>
+                    )}
+                    
+                    {content.scheduled_at && (
+                      <span className="text-xs text-slate-400 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {new Date(content.scheduled_at).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Edit Modal */}
+      {selectedContent && (
+        <EditModal
+          content={selectedContent}
+          suggestions={generateSuggestions(selectedContent, selectedContent.status)}
+          onClose={() => setSelectedContent(null)}
+          onUpdate={(id, data) => {
+            // Update logic
+            fetch(`/api/contents?id=${id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(data),
+            }).then(() => refetch());
+          }}
+          onPublish={() => {
+            refetch();
+            setSelectedContent(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// 编辑弹窗组件
+function EditModal({ 
+  content, 
+  suggestions,
+  onClose, 
+  onUpdate,
+  onPublish
+}: { 
+  content: any; 
+  suggestions: string[];
+  onClose: () => void; 
+  onUpdate: (id: number, data: any) => void;
+  onPublish: () => void;
+}) {
+  const [draft, setDraft] = useState(content.my_draft || content.ai_draft || '');
+  const [outline, setOutline] = useState(content.ai_outline || '');
+  const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<'draft' | 'outline' | 'suggestions' | 'publish'>('draft');
+
+  const handleSave = async () => {
+    setSaving(true);
+    await onUpdate(content.id, { myDraft: draft, aiOutline: outline });
+    setSaving(false);
+    onClose();
+  };
+
+  const tabs = [
+    { key: 'draft', label: '我的稿件', icon: '✍️' },
+    { key: 'outline', label: 'AI大纲', icon: '📋' },
+    { key: 'suggestions', label: '智能建议', icon: '💡' },
+    { key: 'publish', label: '公众号发布', icon: '💬' },
+  ];
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={onClose}>
+      <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="p-6">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-bold text-slate-900">{content.title}</h2>
+              <div className="flex items-center gap-2 mt-1">
+                {content.ai_relevance && (
+                  <span className="text-sm bg-amber-100 text-amber-700 px-2 py-0.5 rounded">
+                    相关度: {content.ai_relevance}/10
+                  </span>
+                )}
+                {content.source && (
+                  <a 
+                    href={content.source} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-600 hover:underline"
+                  >
+                    查看原文
+                  </a>
+                )}
+              </div>
+            </div>
+            <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-2 mb-4 border-b">
+            {tabs.map((tab: any) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`px-4 py-2 text-sm font-medium transition-colors flex items-center gap-1 ${
+                  activeTab === tab.key
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                {tab.icon} {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab Content */}
+          {activeTab === 'draft' && (
+            <div>
+              {content.ai_summary && (
+                <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                  <div className="flex items-center gap-2 text-blue-600 text-sm font-medium mb-1">
+                    <Sparkles className="w-4 h-4" />
+                    AI摘要
+                  </div>
+                  <p className="text-sm text-slate-700">{content.ai_summary}</p>
+                </div>
+              )}
+              <textarea
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                placeholder="在这里编辑你的文章..."
+                className="w-full h-64 p-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          )}
+
+          {activeTab === 'outline' && (
+            <div>
+              {content.ai_outline ? (
+                <pre className="p-4 bg-slate-50 rounded-lg text-sm text-slate-700 whitespace-pre-wrap">{content.ai_outline}</pre>
+              ) : (
+                <div className="text-center py-8 text-slate-400">
+                  <Zap className="w-8 h-8 mx-auto mb-2" />
+                  <p>还没有AI大纲</p>
+                  <button className="mt-2 px-4 py-2 bg-purple-500 text-white rounded-lg text-sm">
+                    生成大纲
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'suggestions' && (
+            <div className="space-y-3">
+              {suggestions.map((suggestion, i) => (
+                <div key={i} className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg">
+                  <Lightbulb className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-slate-700">{suggestion}</p>
+                </div>
+              ))}
+              
+              <div className="mt-4 pt-4 border-t">
+                <h4 className="font-medium text-slate-900 mb-2 flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4" />
+                  预期表现
+                </h4>
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div className="p-3 bg-slate-50 rounded-lg text-center">
+                    <div className="text-slate-500">预计阅读</div>
+                    <div className="text-xl font-bold text-slate-900">1,200</div>
+                  </div>
+                  <div className="p-3 bg-slate-50 rounded-lg text-center">
+                    <div className="text-slate-500">互动率</div>
+                    <div className="text-xl font-bold text-slate-900">8.5%</div>
+                  </div>
+                  <div className="p-3 bg-slate-50 rounded-lg text-center">
+                    <div className="text-slate-500">最佳发布时间</div>
+                    <div className="text-xl font-bold text-slate-900">周三21:00</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'publish' && (
+            <Suspense fallback={
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin w-6 h-6 border-2 border-green-500 border-t-transparent rounded-full" />
+              </div>
+            }>
+              <WeChatPublishPanel
+                contentId={content.id}
+                title={content.title}
+                content={draft || content.ai_summary || ''}
+                onPublish={onPublish}
+              />
+            </Suspense>
+          )}
+
+          {activeTab !== 'publish' && (
+            <div className="mt-6 flex justify-end gap-3">
+              <button onClick={onClose} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg">取消</button>
+              <button 
+                onClick={handleSave} 
+                disabled={saving}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+              >
+                {saving ? '保存中...' : '保存'}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
